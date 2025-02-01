@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .think {
+            background-color: #f0f0f0;
+        }
+    </style>
+    <script src="./marked.min.js"></script>
+    <script >
+        const renderer = new marked.Renderer();
+    </script>  
+    <title>Document</title>
+</head>
+<body>
+    <div id="chat"></div>
+    <script >
+        const prompt = `请帮忙提供一份减肥计划,按照一周的，详细一下`;
+    </script>
+    <script >
+        const chatDiv = document.getElementById('chat');
+        // stream 模式的数据调用
+        async function stream_fetch() {
+            const response = await fetch('http://localhost:11434/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    "model": "deepseek-r1:1.5b",
+                    "messages": [
+                        {
+                        "role": "user",
+                        "content": prompt
+                        }
+                    ],
+                    "stream": true
+                }),
+            });
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let done = false;
+            let output = '';
+            while (!done) {
+                const { value, done: streamDone } = await reader.read();
+                done = streamDone;
+                tep_mesg = JSON.parse(decoder.decode(value, { stream: true })).message.content;
+                if (tep_mesg == '\u003cthink\u003e') {
+                    output += "<div class='think'>"
+                } else if (tep_mesg == '\u003c/think\u003e') {
+                    output += "</div>"
+                }
+                else {
+                    output += tep_mesg;
+                }
+                chatDiv.innerHTML = marked.parse(output, { renderer: renderer,breaks: true, gfm: true });
+                console.log(chatDiv.innerHTML);
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+            }
+        }
+        stream_fetch();
+
+    </script>
+</body>
+</html>
